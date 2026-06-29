@@ -1,6 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:get_it/get_it.dart';
 
+import '../../features/auth/data/datasources/auth_remote_datasource.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/domain/usecases/sign_in.dart';
+import '../../features/auth/domain/usecases/sign_out.dart';
+import '../../features/auth/domain/usecases/sign_up.dart';
+import '../../features/auth/domain/usecases/watch_auth_state.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/opportunities/data/datasources/opportunity_firestore_datasource.dart';
 import '../../features/opportunities/data/repositories/opportunity_repository_impl.dart';
 import '../../features/opportunities/domain/repositories/opportunity_repository.dart';
@@ -18,6 +27,30 @@ final sl = GetIt.instance; // "service locator" — conventional name for the ge
 Future<void> initDependencies() async {
   // ---- external ----
   sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
+  sl.registerLazySingleton<fb_auth.FirebaseAuth>(() => fb_auth.FirebaseAuth.instance);
+
+  // ---- auth feature ----
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSource(sl(), sl()),
+  );
+
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(sl()),
+  );
+
+  sl.registerLazySingleton(() => WatchAuthState(sl()));
+  sl.registerLazySingleton(() => SignIn(sl()));
+  sl.registerLazySingleton(() => SignUp(sl()));
+  sl.registerLazySingleton(() => SignOut(sl()));
+
+  sl.registerLazySingleton(
+    () => AuthBloc(
+      watchAuthState: sl(),
+      signIn: sl(),
+      signUp: sl(),
+      signOut: sl(),
+    ),
+  );
 
   // ---- opportunities feature ----
   sl.registerLazySingleton<OpportunityFirestoreDataSource>(

@@ -1,17 +1,13 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/opportunity.dart';
 
-/// A single, non-exclusive state shape. The feed list and the submit-form
-/// status are independent concerns that happen to live in one BLoC (per
-/// our one-BLoC-per-feature decision) — so they're separate fields, not
-/// separate mutually-exclusive subtypes. This is what stops "submitting"
-/// from clobbering an already-loaded feed underneath it.
 class OpportunityState extends Equatable {
   final List<Opportunity> opportunities;
   final bool isLoadingFeed;
   final bool isSubmitting;
   final String? feedError;
   final String? submitError;
+  final String searchQuery;
 
   const OpportunityState({
     this.opportunities = const [],
@@ -19,7 +15,20 @@ class OpportunityState extends Equatable {
     this.isSubmitting = false,
     this.feedError,
     this.submitError,
+    this.searchQuery = '',
   });
+
+  /// Client-side filter — no extra Firestore query needed.
+  /// Matches against title, startup name, or role type.
+  List<Opportunity> get filteredOpportunities {
+    if (searchQuery.isEmpty) return opportunities;
+    final q = searchQuery.toLowerCase();
+    return opportunities.where((o) {
+      return o.title.toLowerCase().contains(q) ||
+          o.startupName.toLowerCase().contains(q) ||
+          o.roleType.toLowerCase().contains(q);
+    }).toList();
+  }
 
   OpportunityState copyWith({
     List<Opportunity>? opportunities,
@@ -27,6 +36,7 @@ class OpportunityState extends Equatable {
     bool? isSubmitting,
     String? feedError,
     String? submitError,
+    String? searchQuery,
   }) {
     return OpportunityState(
       opportunities: opportunities ?? this.opportunities,
@@ -34,10 +44,17 @@ class OpportunityState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       feedError: feedError,
       submitError: submitError,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [opportunities, isLoadingFeed, isSubmitting, feedError, submitError];
+  List<Object?> get props => [
+    opportunities,
+    isLoadingFeed,
+    isSubmitting,
+    feedError,
+    submitError,
+    searchQuery,
+  ];
 }

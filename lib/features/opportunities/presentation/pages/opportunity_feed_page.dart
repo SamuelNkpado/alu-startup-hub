@@ -88,7 +88,8 @@ class OpportunityFeedPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 48),
                       const SizedBox(height: 16),
                       Text(
                         'Error: ${state.feedError}',
@@ -108,29 +109,62 @@ class OpportunityFeedPage extends StatelessWidget {
                 ),
               );
             }
-            if (state.opportunities.isEmpty) {
-              return const Center(child: Text('No open opportunities yet.'));
-            }
-            return ListView.builder(
-              itemCount: state.opportunities.length,
-              itemBuilder: (context, index) {
-                final opportunity = state.opportunities[index];
-                return ListTile(
-                  title: Text(opportunity.title),
-                  subtitle: Text(
-                      '${opportunity.startupName} · ${opportunity.roleType}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => OpportunityDetailPage(
-                          opportunity: opportunity,
-                        ),
+
+            final results = state.filteredOpportunities;
+
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search by title, startup, or role...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  },
-                );
-              },
+                      contentPadding:
+                      const EdgeInsets.symmetric(vertical: 0),
+                    ),
+                    onChanged: (query) {
+                      context
+                          .read<OpportunityBloc>()
+                          .add(OpportunitySearchChanged(query));
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: results.isEmpty
+                      ? Center(
+                    child: Text(
+                      state.searchQuery.isEmpty
+                          ? 'No open opportunities yet.'
+                          : 'No results for "${state.searchQuery}".',
+                    ),
+                  )
+                      : ListView.builder(
+                    itemCount: results.length,
+                    itemBuilder: (context, index) {
+                      final opportunity = results[index];
+                      return ListTile(
+                        title: Text(opportunity.title),
+                        subtitle: Text(
+                            '${opportunity.startupName} · ${opportunity.roleType}'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => OpportunityDetailPage(
+                                opportunity: opportunity,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
             );
           },
         ),

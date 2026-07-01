@@ -8,14 +8,10 @@ abstract class OpportunityEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Fired once, when the feed screen mounts. Starts the Firestore stream
-/// subscription inside the BLoC.
 class WatchOpportunitiesStarted extends OpportunityEvent {
   const WatchOpportunitiesStarted();
 }
 
-/// Fired internally by the BLoC every time the underlying stream emits
-/// a new list. Never dispatched by the UI directly.
 class OpportunitiesUpdated extends OpportunityEvent {
   final List<Opportunity> opportunities;
   const OpportunitiesUpdated(this.opportunities);
@@ -46,4 +42,13 @@ class WatchOpportunitiesErrorOccurred extends OpportunityEvent {
 
   @override
   List<Object?> get props => [message];
+}
+
+/// Fired by the search bar on every keystroke.
+class OpportunitySearchChanged extends OpportunityEvent {
+  final String query;
+  const OpportunitySearchChanged(this.query);
+
+  @override
+  List<Object?> get props => [query];
 }

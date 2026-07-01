@@ -23,22 +23,18 @@ class OpportunityBloc extends Bloc<OpportunityEvent, OpportunityState> {
     on<OpportunityCreateSubmitted>(_onCreateSubmitted);
     on<WatchOpportunitiesErrorOccurred>(_onWatchError);
     on<OpportunityCloseRequested>(_onCloseRequested);
+    on<OpportunitySearchChanged>(_onSearchChanged);
   }
 
-  /// This is the real-time mechanism: the BLoC subscribes once to the
-  /// domain-layer Stream, and every emission from Firestore is re-dispatched
-  /// as an internal event. Going through `add()` rather than mutating state
-  /// directly inside the subscription callback keeps every state change
-  /// flowing through the same event->state pipeline, which is what makes
-  /// the BLoC's behavior predictable and explainable.
   void _onWatchStarted(
       WatchOpportunitiesStarted event, Emitter<OpportunityState> emit) async {
     emit(state.copyWith(isLoadingFeed: true, feedError: null));
 
     await _feedSubscription?.cancel();
     _feedSubscription = watchOpenOpportunities().listen(
-      (opportunities) => add(OpportunitiesUpdated(opportunities)),
-      onError: (error) => add(WatchOpportunitiesErrorOccurred(error.toString())),
+          (opportunities) => add(OpportunitiesUpdated(opportunities)),
+      onError: (error) =>
+          add(WatchOpportunitiesErrorOccurred(error.toString())),
     );
   }
 
@@ -62,8 +58,6 @@ class OpportunityBloc extends Bloc<OpportunityEvent, OpportunityState> {
     try {
       await createOpportunity(event.opportunity);
       emit(state.copyWith(isSubmitting: false));
-      // No need to manually refresh the feed — the Firestore stream
-      // subscription above will emit the new list automatically.
     } catch (error) {
       emit(state.copyWith(isSubmitting: false, submitError: error.toString()));
     }
@@ -76,6 +70,14 @@ class OpportunityBloc extends Bloc<OpportunityEvent, OpportunityState> {
     } catch (error) {
       emit(state.copyWith(submitError: error.toString()));
     }
+  }
+
+  /// Pure client-side filter — just updates the query string in state.
+  /// The filteredOpportunities getter in OpportunityState does the actual
+  /// filtering, so no Firestore round-trip is needed.
+  void _onSearchChanged(
+      OpportunitySearchChanged event, Emitter<OpportunityState> emit) {
+    emit(state.copyWith(searchQuery: event.query));
   }
 
   @override
